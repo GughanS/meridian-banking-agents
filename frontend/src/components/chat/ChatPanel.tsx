@@ -89,14 +89,25 @@ export const ChatPanel: React.FC = () => {
                     m.id === modelMsgId ? { ...m, tools: [...(m.tools || []), data.name] } : m
                   ));
                 } else if (data.type === 'tool_response') {
-                  if (data.content && typeof data.content === 'object' && data.content.action_id) {
+                  let payload = data.content;
+                  if (typeof payload === 'string') {
+                    try {
+                      payload = JSON.parse(payload);
+                    } catch {
+                      // ignore non-json strings
+                    }
+                  }
+                  if (payload && typeof payload === 'object' && payload.data) {
+                    payload = payload.data;
+                  }
+                  if (payload && typeof payload === 'object' && payload.action_id) {
                     setMessages(prev => prev.map(m => 
                       m.id === modelMsgId ? {
                         ...m,
                         confirmAction: {
-                          actionId: String(data.content.action_id),
+                          actionId: String(payload.action_id),
                           type: String(data.name || 'pending_action'),
-                          details: data.content as Record<string, unknown>
+                          details: payload as Record<string, unknown>
                         }
                       } : m
                     ));

@@ -1,3 +1,4 @@
+import json
 import os
 from typing import Any, Protocol
 
@@ -126,14 +127,37 @@ class MockLLMClient:
         tool_msgs = [m for m in messages if isinstance(m, dict) and m.get("role") == "tool"]
         tool_names_called = [m.get("tool_name") for m in tool_msgs]
 
+        def _parse_content(content: Any) -> Any:
+            if isinstance(content, str):
+                try:
+                    return json.loads(content)
+                except Exception:
+                    return content
+            return content
+
         def _get_items(content: Any) -> list[Any]:
-            if isinstance(content, list):
-                return content
-            if isinstance(content, dict):
-                if "data" in content and isinstance(content["data"], list):
-                    return content["data"]  # type: ignore
-                return [content]
+            parsed = _parse_content(content)
+            if isinstance(parsed, list):
+                return parsed
+            if isinstance(parsed, dict):
+                d = parsed.get("data", parsed)
+                if isinstance(d, list):
+                    return d
+                if isinstance(d, dict):
+                    if "data" in d and isinstance(d["data"], list):
+                        return d["data"]
+                    return [d]
+                return [parsed]
             return []
+
+        def _get_data_dict(content: Any) -> dict[str, Any]:
+            parsed = _parse_content(content)
+            if isinstance(parsed, dict):
+                d = parsed.get("data", parsed)
+                if isinstance(d, dict):
+                    return d
+                return parsed
+            return {}
 
         def _get_field(item: Any, key: str, default: Any = None) -> Any:
             if isinstance(item, dict):
@@ -217,9 +241,8 @@ class MockLLMClient:
                                 if last4:
                                     card_desc = f"debit card ending in **{last4}**"
                         if tm.get("tool_name") == "propose_card_block":
-                            c = tm.get("content")
-                            if isinstance(c, dict):
-                                act_id = c.get("action_id", "pending")
+                            c_dict = _get_data_dict(tm.get("content"))
+                            act_id = str(c_dict.get("action_id", "pending"))
                     resp_text = f"⚠️ **Card Freeze Proposed**\n\nI have created a pending action to freeze your {card_desc}.\n\n**Action ID:** `{act_id}`\n\n*Please confirm below:*"
             else:
                 resp_text = "I have retrieved your account and transaction details. Your current balance and records are up to date."
@@ -250,9 +273,8 @@ class MockLLMClient:
                                 if last4:
                                     card_desc = f"debit card ending in **{last4}**"
                         if tm.get("tool_name") == "propose_card_block":
-                            c = tm.get("content")
-                            if isinstance(c, dict):
-                                act_id = c.get("action_id", "pending")
+                            c_dict = _get_data_dict(tm.get("content"))
+                            act_id = str(c_dict.get("action_id", "pending"))
                     resp_text = f"⚠️ **Card Freeze Proposed**\n\nI have created a pending action to freeze your {card_desc}.\n\n**Action ID:** `{act_id}`\n\n*Please confirm below:*"
             elif any(k in user_text for k in ["fraud", "dispute", "unauthorized", "didn't make"]):
                 if "get_disputes" not in tool_names_called:

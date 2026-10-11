@@ -52,7 +52,14 @@ async def chat_stream(
                             elif msg["role"] == "model" and msg.get("function_call"):
                                 yield {"data": json.dumps({"type": "tool_call", "name": msg["function_call"]["name"]})}
                             elif msg["role"] == "tool" and msg.get("content"):
-                                yield {"data": json.dumps({"type": "tool_response", "name": msg.get("tool_name"), "content": msg["content"]})}
+                                c = msg["content"]
+                                if isinstance(c, str):
+                                    try:
+                                        c = json.loads(c)
+                                    except Exception:
+                                        pass
+                                payload = c.get("data", c) if isinstance(c, dict) else c
+                                yield {"data": json.dumps({"type": "tool_response", "name": msg.get("tool_name"), "content": payload})}
             
             yield {"data": json.dumps({"type": "done"})}
         except Exception as e:
