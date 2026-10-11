@@ -1,10 +1,18 @@
 # Workflow: /verify-ui
 
-**Description:** Triggers the browser agent to perform an end-to-end verification of the UI for Use Cases 1-8.
+## Objective
+Perform an end-to-end browser verification of the Meridian frontend application covering Use Cases 1 through 8.
 
-**Steps:**
-1. Ensure the application is running (`make up`).
-2. Invoke the browser subagent to open `http://localhost:5173`.
-3. Sequentially execute Use Cases 1 through 8.
-4. Capture screenshots at the completion of each use case or crucial intermediate steps (e.g., confirmation cards).
-5. Compile the results into a markdown report with attached screenshots.
+## Requirements
+- The application must be running locally via `make dev` or `make up`.
+- The `browser_subagent` must be available.
+
+## Steps
+1. Invoke the browser subagent to navigate to `http://localhost:5173`.
+2. Login as the selected Persona.
+3. For each Use Case (UC1 to UC8):
+   - Trigger the scenario in the chat.
+   - Wait for streaming response and UI blocks to render.
+   - Take a screenshot of the resulting UI block (e.g., transaction table, EMI breakdown).
+   - If a confirmation card appears (e.g., card block, loan propose), interact with it and verify state updates.
+4. Attach the generated screenshots to a final walkthrough report.

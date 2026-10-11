@@ -1,26 +1,24 @@
+version: '3.8'
+
 services:
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile
     ports:
       - "8000:8000"
+      - "8001:8001"
     environment:
-      - DATABASE_URL=sqlite+aiosqlite:///./meridian.db
-      - DEFAULT_CURRENCY=INR
-    env_file:
-      - .env
+      - LLM_PROVIDER=mock
+      - DATABASE_URL=sqlite+aiosqlite:///meridian.db
+      - CORE_BASE_URL=http://localhost:8001/mock-core/v1
     volumes:
       - ./backend:/app
 
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
     ports:
       - "5173:5173"
-    environment:
-      - VITE_API_URL=http://localhost:8000
     volumes:
       - ./frontend:/app
       - /app/node_modules

@@ -1,24 +1,17 @@
-.PHONY: setup up down seed dev test lint typecheck eval demo
+.PHONY: setup up down test lint typecheck eval demo
 
 setup:
 	cd backend && uv sync
 	cd frontend && npm install
 
 up:
-	docker compose up -d
+	docker-compose up --build
 
 down:
-	docker compose down
-
-seed:
-	cd backend && uv run python scripts/seed.py
-
-dev:
-	start powershell -NoExit -Command "cd backend; uv run uvicorn app.main:app --reload --port 8000"
-	start powershell -NoExit -Command "cd frontend; npm run dev"
+	docker-compose down
 
 test:
-	cd backend && uv run pytest --cov=app tests/
+	cd backend && uv run pytest --cov=app/engines --cov-fail-under=95
 	cd frontend && npm run test
 
 lint:
@@ -27,10 +20,12 @@ lint:
 
 typecheck:
 	cd backend && uv run mypy --strict app/
-	cd frontend && npm run typecheck
+	cd frontend && npm run build
 
 eval:
 	cd backend && uv run python scripts/eval_routing.py
 
-demo: seed up
-	@echo "Demo ready at http://localhost:5173"
+demo:
+	cd backend && uv run python -m scripts.seed
+	docker-compose up -d
+	@echo "Demo running at http://localhost:5173"
