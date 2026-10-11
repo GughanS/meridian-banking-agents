@@ -4,10 +4,9 @@ from datetime import UTC, datetime, timedelta
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
-from sqlmodel import SQLModel
 
 from app.db.models import ChatSession, Customer, PendingAction
-from app.db.session import SessionLocal, engine
+from app.db.session import SessionLocal
 from app.main import app
 
 
