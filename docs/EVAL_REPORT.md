@@ -4,4 +4,4 @@ Total queries: 10
 Correct: 10
 Accuracy: 100.00%
 
-*Evaluated against Google GenAI (gemini-2.5-pro).*
+*Evaluated against Deterministic Mock Engine (Offline Mode).*

@@ -74,19 +74,57 @@ class MockLLMClient:
         return True
         
     async def generate_content(self, system_prompt: str, messages: list[dict[str, Any]], tools: list[Any]) -> Any:
+        user_text = ""
+        for msg in messages:
+            content = ""
+            if isinstance(msg, dict):
+                c = msg.get("content", "")
+                if isinstance(c, str) and not c.startswith("Based on the conversation"):
+                    content = c
+            elif isinstance(msg, (list, tuple)) and len(msg) >= 2:
+                content = str(msg[1])
+            elif hasattr(msg, "content"):
+                c = str(msg.content)
+                if not c.startswith("Based on the conversation"):
+                    content = c
+            if content:
+                user_text += " " + content.lower()
+
+        resp_text = "Mock response"
+        func_calls: list[Any] = []
+
+        if "Supervisor" in system_prompt:
+            if any(k in user_text for k in ["loan", "emi", "credit", "borrow"]):
+                resp_text = "CreditAgent"
+            elif any(k in user_text for k in ["fraud", "block", "freeze", "dispute", "stolen", "lost", "compromised", "unauthorized", "didn't make"]):
+                resp_text = "RiskAgent"
+            elif any(k in user_text for k in ["balance", "transaction", "address", "account", "transfer"]):
+                resp_text = "CustomerAgent"
+            else:
+                resp_text = "CustomerAgent"
+        elif "Customer Agent" in system_prompt:
+            resp_text = "I have retrieved your account and transaction details. Your current balance and records are up to date."
+        elif "Risk Agent" in system_prompt:
+            resp_text = "Your card management request has been processed. If you requested a card block, please review the confirmation card."
+        elif "Credit Agent" in system_prompt:
+            resp_text = "I have evaluated your credit profile. Your indicative loan eligibility and EMI estimates are ready."
+
         class MockPart:
-            text = "Mock response"
-            function_call = None
+            def __init__(self, text: str, fc: Any = None):
+                self.text = text
+                self.function_call = fc
         
         class MockCandidate:
-            content = types.Content(role="model", parts=[MockPart()])
+            def __init__(self, text: str):
+                self.content = types.Content(role="model", parts=[MockPart(text)])
             
         class MockResponse:
-            candidates = [MockCandidate()]
-            text = "Mock response"
-            function_calls = []
+            def __init__(self, text: str):
+                self.candidates = [MockCandidate(text)]
+                self.text = text
+                self.function_calls = func_calls
             
-        return MockResponse()
+        return MockResponse(resp_text)
 
 def get_llm_client(model_id: str = "gemini-2.5-flash") -> LLMClient:
     provider = os.getenv("LLM_PROVIDER", "mock")

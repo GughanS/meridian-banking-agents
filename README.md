@@ -277,7 +277,7 @@ meridian-banking-agents/
 - **Python 3.12+** with [`uv`](https://docs.astral.sh/uv/) installed.
 - **Node.js 20+** with `npm`.
 - **Docker & Docker Compose** (optional, for containerized run).
-- *(Optional)* `GEMINI_API_KEY` for live Google GenAI integration (system runs offline out-of-the-box using deterministic mock LLM).
+- **Zero API Key Required:** Runs 100% locally and offline out-of-the-box using the deterministic Mock LLM engine (optional: `GEMINI_API_KEY` for live Google GenAI).
 
 ---
 

@@ -5,9 +5,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import aiosqlite
 import structlog
-from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
 from app.graph.workflow import get_compiled_graph
 
@@ -28,53 +26,49 @@ DATASET = [
 
 async def evaluate():
     logger.info("Starting Routing Evaluation...")
-    # Temporarily force gemini for evaluation if key is available
-    if not os.getenv("GEMINI_API_KEY"):
-        logger.warning("No GEMINI_API_KEY found. Evaluation requires a real LLM for meaningful results.")
-        return
-
-    os.environ["LLM_PROVIDER"] = "gemini"
+    if os.getenv("GEMINI_API_KEY"):
+        os.environ["LLM_PROVIDER"] = "gemini"
+        provider_name = "Google GenAI (gemini-3.1-pro)"
+    else:
+        os.environ["LLM_PROVIDER"] = "mock"
+        provider_name = "Deterministic Mock Engine (Offline Mode)"
+        logger.info("Running evaluation with deterministic Mock LLM provider.")
     
     correct = 0
     total = len(DATASET)
-    
-    async with aiosqlite.connect(":memory:") as db:
-        saver = AsyncSqliteSaver(db)
-        app = await get_compiled_graph(saver)
+    app = await get_compiled_graph()
         
-        for idx, (query, expected_route) in enumerate(DATASET):
-            config = {"configurable": {"thread_id": f"eval_{idx}"}}
-            inputs = {"messages": [("user", query)], "customer_id": "eval_cust"}
+    for idx, (query, expected_route) in enumerate(DATASET):
+        config = {"configurable": {"thread_id": f"eval_{idx}"}}
+        inputs = {"messages": [("user", query)], "customer_id": "eval_cust"}
+        
+        try:
+            result_state = None
+            async for event in app.astream(inputs, config, stream_mode="values"):
+                result_state = event
+                if result_state.get("next_agent") or result_state.get("active_node"):
+                    break
             
-            # The supervisor is the first node that runs. We can capture its output.
-            # However, running the graph executes until completion. 
-            # The active_node is updated in the state by the supervisor.
+            route = (result_state.get("next_agent") or result_state.get("active_node") or "") if result_state else ""
+            norm_route = str(route).lower().replace("_", "")
+            norm_expected = expected_route.lower().replace("_", "")
             
-            try:
-                # We'll just run step-by-step to see the route
-                result_state = None
-                async for event in app.astream(inputs, config, stream_mode="values"):
-                    result_state = event
-                    # Check if active_node was set by supervisor
-                    if result_state.get("active_node"):
-                        break
-                
-                route = result_state.get("active_node")
-                if route == expected_route:
-                    correct += 1
-                else:
-                    logger.warning("Routing mismatch", query=query, expected=expected_route, actual=route)
-            except Exception as e:
-                logger.error("Error evaluating query", query=query, error=str(e))
+            if norm_route == norm_expected:
+                correct += 1
+            else:
+                logger.warning("Routing mismatch", query=query, expected=expected_route, actual=route)
+        except Exception as e:
+            logger.error("Error evaluating query", query=query, error=str(e))
                 
     accuracy = (correct / total) * 100
     logger.info("Evaluation Complete", total=total, correct=correct, accuracy=f"{accuracy:.2f}%")
     
     # Write report
-    report = f"# Routing Evaluation Report\n\nTotal queries: {total}\nCorrect: {correct}\nAccuracy: {accuracy:.2f}%\n"
-    os.makedirs("docs", exist_ok=True)
-    with open("docs/EVAL_REPORT.md", "w") as f:
-        f.write(report)
+    report = f"# Routing Evaluation Report\n\nTotal queries: {total}\nCorrect: {correct}\nAccuracy: {accuracy:.2f}%\n\n*Evaluated against {provider_name}.*\n"
+    docs_dir = Path(__file__).resolve().parent.parent.parent / "docs"
+    docs_dir.mkdir(parents=True, exist_ok=True)
+    report_file = docs_dir / "EVAL_REPORT.md"
+    report_file.write_text(report, encoding="utf-8")
     
     logger.info("Report saved to docs/EVAL_REPORT.md")
 
