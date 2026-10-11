@@ -2,13 +2,14 @@
 
 <p align="center">
   <strong>Enterprise-Grade, Deterministic Multi-Agent Banking Platform</strong><br>
-  Built with LangGraph, FastAPI, and React 18
+  Built with LangGraph Multi-Agent Architecture, FastAPI, and React 18
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.12-blue?logo=python" alt="Python 3.12">
   <img src="https://img.shields.io/badge/FastAPI-0.115+-009688?logo=fastapi" alt="FastAPI">
   <img src="https://img.shields.io/badge/LangGraph-Multi--Agent-orange" alt="LangGraph">
+  <img src="https://img.shields.io/badge/Agent%20Engine-Deterministic%20Mock-blueviolet" alt="Agent Engine">
   <img src="https://img.shields.io/badge/React-18-61DAFB?logo=react" alt="React 18">
   <img src="https://img.shields.io/badge/TypeScript-Strict-3178C6?logo=typescript" alt="TypeScript">
   <img src="https://img.shields.io/badge/TailwindCSS-3.4-38B2AC?logo=tailwind-css" alt="Tailwind CSS">
@@ -39,10 +40,10 @@
 
 ## Executive Overview
 
-Modern financial applications require the conversational fluidity of Large Language Models paired with the **unyielding mathematical rigor, zero-float precision, and strict authorization boundaries** of institutional core banking.
+Modern financial applications require conversational intelligence paired with the **unyielding mathematical rigor, zero-float precision, and strict authorization boundaries** of institutional core banking.
 
 **Meridian AI Banking Agents** bridges this gap. Meridian decouples agent orchestration from financial calculation:
-- **LLMs explain, deterministic code decides.** Large Language Models interpret user queries, select specialist tools, and synthesize natural language explanations.
+- **Agents explain, deterministic code decides.** Specialist agents interpret user queries, select banking tools, and synthesize natural language explanations.
 - **Engines execute mathematical decisions.** Balance computation, EMI amortization, credit limit risk formulas, and anomaly detection algorithms are 100% deterministic, written in pure Python using `Decimal` minor units, backed by exhaustive unit tests.
 - **Human-confirmed two-phase writes.** Agents can never modify ledger state directly; they can only propose pending actions requiring cryptographic user confirmation.
 
@@ -52,14 +53,14 @@ Modern financial applications require the conversational fluidity of Large Langu
 
 Meridian is built against the strict tenets codified in [`AGENTS.md`](./AGENTS.md):
 
-1. **LLMs Explain; Deterministic Code Decides:** Fraud scores, loan eligibility, EMI amortization, and ledger balances come exclusively from unit-tested, deterministic Python engines. The LLM never invents or calculates numbers.
-2. **Identity is Never an LLM Parameter:** `customer_id` is never passed into prompt text or tool parameters. It is verified via JWT and injected server-side into execution contexts with strict object-level authorization (OLA).
+1. **Agents Explain; Deterministic Code Decides:** Fraud scores, loan eligibility, EMI amortization, and ledger balances come exclusively from unit-tested, deterministic Python engines. The agent never invents or calculates numbers.
+2. **Identity is Never an Agent Parameter:** `customer_id` is never passed into prompt text or tool parameters. It is verified via JWT and injected server-side into execution contexts with strict object-level authorization (OLA).
 3. **Writes are Two-Phase & Human-Confirmed:** Agents may only invoke `propose_*` tools to generate a short-lived `PendingAction` (5-minute TTL). Execution occurs exclusively via `POST /actions/{id}/confirm` triggered by an authenticated human click.
 4. **Money is Never a Float:** All currency calculations utilize Python `Decimal` or integer minor units (paise/cents). Amounts are serialized to JSON as strings to eliminate IEEE 754 floating-point inaccuracies.
 5. **Tool Output is Untrusted Data:** All external and core-banking tool outputs are sanitized and wrapped in protective guards to prevent secondary prompt injections (e.g., malicious transaction payloads or merchant names).
 6. **Every Layer Fails Safely:** Circuit breakers on the core banking client, bounded retries with jittered backoff, model fallbacks, and hard loop iteration caps (max 6 steps) ensure the agent cannot run wild or crash silently.
 7. **Comprehensive Audit Trail & Observability:** Every execution step records latency, prompt version, tool call parameters (PII redacted), tokens consumed, and state transitions in an append-only audit log.
-8. **Reproducible & Zero-API Dependency:** Supports `LLM_PROVIDER=mock` providing deterministic mock responses for CI, offline unit tests, and evaluations, with seamless switching to Google's official `google-genai` SDK and Gemini 3.1 Pro.
+8. **Reproducible & Zero-API Dependency:** 100% self-contained offline architecture with `LLM_PROVIDER=mock` providing deterministic responses for CI, unit testing, and evaluation benchmarks without any external API keys or cloud dependencies.
 9. **Real-Time Event-Driven Architecture:** An asynchronous, thread-safe Event Bus monitors transactions in real-time, streaming Server-Sent Events (SSE) to the frontend for proactive fraud alerting.
 10. **Honest UX & Financial Disclaimers:** A persistent top-level banner declares simulated environment status. Credit outputs are clearly stamped with *"Indicative, not an offer"* and balances render with locale-specific digit grouping (INR ₹).
 
@@ -235,7 +236,7 @@ meridian-banking-agents/
 │   │   ├── engines/             # Deterministic business logic (EMI, eligibility, fraud, actions)
 │   │   ├── events/              # Async in-memory pub/sub Event Bus
 │   │   ├── graph/               # LangGraph supervisor workflow & agent nodes
-│   │   ├── llm/                 # LLM client protocols, tool registries, Gemini client
+│   │   ├── llm/                 # Agent protocols, deterministic engine, tool registries
 │   │   ├── simulator/           # Background transaction generator
 │   │   └── main.py              # Application entrypoint & lifespan management
 │   ├── scripts/
@@ -275,8 +276,7 @@ meridian-banking-agents/
 ### Prerequisites
 - **Python 3.12+** with [`uv`](https://docs.astral.sh/uv/) installed.
 - **Node.js 20+** with `npm`.
-- **Docker & Docker Compose** (optional, for containerized run).
-- **Zero API Key Required:** Runs 100% locally and offline out-of-the-box using the deterministic Mock LLM engine (optional: `GEMINI_API_KEY` for live Google GenAI).
+- **Zero API Key Required:** Runs 100% locally and offline out-of-the-box using the deterministic agent simulation engine with zero external API dependencies.
 
 ---
 
@@ -387,7 +387,7 @@ Environment variables can be configured via `.env` in the project root:
 
 | Variable | Default Value | Description |
 |---|---|---|
-| `LLM_PROVIDER` | `mock` | `mock` for deterministic offline testing; `gemini` for live Google GenAI. |
+| `LLM_PROVIDER` | `mock` | Multi-agent execution provider (`mock` for 100% offline deterministic execution). |
 | `DATABASE_URL` | `sqlite+aiosqlite:///meridian.db` | Async SQLAlchemy database URI. |
 | `CORE_BASE_URL` | `http://localhost:8000/mock-core/v1` | Core banking API base endpoint. |
 | `JWT_SECRET_KEY` | *(32-byte secure key)* | Cryptographic key for signing customer JWT tokens. |

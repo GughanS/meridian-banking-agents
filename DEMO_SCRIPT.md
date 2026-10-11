@@ -6,8 +6,7 @@ Welcome to the Meridian AI Banking Agents demo. This guide will walk you through
 - Docker & Docker Compose
 - Node.js (for local frontend development)
 - Python 3.12 + `uv` (for local backend development)
-- **No API key required:** Runs 100% locally out-of-the-box using the deterministic Mock LLM engine.
-- Optional: `GEMINI_API_KEY` only if live Google GenAI generation is explicitly desired.
+- **Zero API keys required:** Runs 100% locally and offline out-of-the-box using the deterministic multi-agent engine.
 
 ## Step 1: Start the Demo
 We provide a unified Makefile command to launch everything:

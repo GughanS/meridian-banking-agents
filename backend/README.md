@@ -6,7 +6,7 @@ Production-ready asynchronous backend powering the Meridian Multi-Agent Core Ban
 
 - **Framework:** FastAPI with Python 3.12, strict typing with Pydantic v2
 - **Orchestration:** LangGraph multi-agent supervisor graph (`CustomerAgent`, `RiskAgent`, `CreditAgent`)
-- **LLM Engine:** Direct Google GenAI SDK integration with built-in deterministic Mock LLM (`LLM_PROVIDER=mock`)
+- **Agent Engine:** Built-in deterministic multi-agent execution (`LLM_PROVIDER=mock`, zero external API dependencies)
 - **Persistence:** SQLModel + SQLite (`aiosqlite`) with Alembic migrations
 - **Deterministic Engines:** Unit-tested modules for loan eligibility, EMI amortization, fraud scoring, and action authorization
 - **Streaming & Events:** Server-Sent Events (SSE) via `sse-starlette` and async in-memory pub/sub event bus
