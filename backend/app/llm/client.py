@@ -169,7 +169,7 @@ class MockLLMClient:
                 resp_text = "CreditAgent"
             elif any(k in user_text for k in ["fraud", "block", "freeze", "dispute", "stolen", "lost", "compromised", "unauthorized", "didn't make"]):
                 resp_text = "RiskAgent"
-            elif any(k in user_text for k in ["balance", "transaction", "address", "account", "transfer"]):
+            elif any(k in user_text for k in ["balance", "transaction", "address", "account", "transfer", "bill", "utility", "pay"]):
                 resp_text = "CustomerAgent"
             else:
                 resp_text = "CustomerAgent"
@@ -216,6 +216,68 @@ class MockLLMClient:
                         resp_text = (acc_info + tx_info).strip()
                     else:
                         resp_text = "Your current balance is **₹1,24,500.00**.\n\n### Recent Transactions:\n- **Fresh Supermarket**: ₹1,250.00 (Groceries)\n- **Cloud Services**: ₹8,400.00 (Business)\n- **Coffee Roast**: ₹350.00 (Dining)"
+            elif any(k in user_text for k in ["transfer", "send", "wire", "remit"]):
+                if "get_accounts" not in tool_names_called:
+                    func_calls = [MockFunctionCallWrapper("get_accounts", {})]
+                else:
+                    bal_str = "₹12,95,000.00"
+                    last4 = "4521"
+                    for tm in tool_msgs:
+                        if tm.get("tool_name") == "get_accounts":
+                            items = _get_items(tm.get("content"))
+                            if items:
+                                acc = items[0]
+                                bal = float(_get_field(acc, "balance", 0))
+                                num = str(_get_field(acc, "account_number", "4521"))
+                                bal_str = f"₹{bal:,.2f}"
+                                last4 = str(num)[-4:]
+                                break
+                    resp_text = (
+                        f"### Fund Transfer Service\n\n"
+                        f"- **Source Account:** Checking ending in **{last4}**\n"
+                        f"- **Available Balance:** **{bal_str}**\n\n"
+                        f"Please provide the transfer details to proceed:\n"
+                        f"1. **Recipient Name or UPI ID** (e.g. *Rohit Sharma* or *`rohit@meridian`*)\n"
+                        f"2. **Transfer Amount** (up to available {bal_str})\n\n"
+                        f"*Meridian enforces Human-in-the-Loop authorization. You will be prompted with a two-phase confirmation block prior to final settlement.*"
+                    )
+            elif any(k in user_text for k in ["bill", "utility", "pay"]):
+                if "get_accounts" not in tool_names_called:
+                    func_calls = [MockFunctionCallWrapper("get_accounts", {})]
+                elif "get_transactions" not in tool_names_called:
+                    acc_id = None
+                    for tm in tool_msgs:
+                        if tm.get("tool_name") == "get_accounts":
+                            items = _get_items(tm.get("content"))
+                            if items:
+                                acc_id = _get_field(items[0], "id")
+                                break
+                    if acc_id:
+                        func_calls = [MockFunctionCallWrapper("get_transactions", {"account_id": str(acc_id), "limit": 3})]
+                else:
+                    bal_str = "₹12,95,000.00"
+                    last4 = "4521"
+                    for tm in tool_msgs:
+                        if tm.get("tool_name") == "get_accounts":
+                            items = _get_items(tm.get("content"))
+                            if items:
+                                acc = items[0]
+                                bal = float(_get_field(acc, "balance", 0))
+                                num = str(_get_field(acc, "account_number", "4521"))
+                                bal_str = f"₹{bal:,.2f}"
+                                last4 = str(num)[-4:]
+                                break
+                    resp_text = (
+                        f"### Upcoming & Recurring Utility Bills\n\n"
+                        f"**Debit Account:** Account ending in **{last4}** (Available Balance: **{bal_str}**)\n\n"
+                        f"| Biller / Service | Category | Amount Due | Due Date | Status |\n"
+                        f"| :--- | :--- | :--- | :--- | :--- |\n"
+                        f"| **Tata Power / Electricity** | Electricity | ₹2,450.00 | In 3 Days | Pending |\n"
+                        f"| **Airtel Fiber Broadband** | Internet | ₹1,199.00 | In 5 Days | Auto-Debit |\n"
+                        f"| **Municipal Water Board** | Water | ₹450.00 | In 7 Days | Pending |\n\n"
+                        f"✅ Your balance of **{bal_str}** is sufficient to cover all scheduled utilities.\n\n"
+                        f"Would you like to initiate payment for any of these bills?"
+                    )
             elif any(k in user_text for k in ["block", "freeze", "lost", "stolen", "card"]):
                 if "get_cards" not in tool_names_called:
                     func_calls = [MockFunctionCallWrapper("get_cards", {})]
