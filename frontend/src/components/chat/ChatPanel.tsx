@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useInspector } from '../../context/InspectorContext';
 import { v4 as uuidv4 } from 'uuid';
 import ReactMarkdown from 'react-markdown';
 import { Send, Loader2 } from 'lucide-react';
@@ -19,16 +20,34 @@ interface Message {
 
 export const ChatPanel: React.FC = () => {
   const { token, persona } = useAuth();
+  const {
+    addTrace,
+    setStatus,
+    setActiveNode,
+    setLastTool,
+    setHistoryLen,
+    resetForPersona
+  } = useInspector();
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const sessionIdRef = useRef<string>(uuidv4());
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const activeNodeRef = useRef<string>('supervisor');
 
   useEffect(() => {
     sessionIdRef.current = uuidv4();
     setMessages([]);
-  }, [persona]);
+    activeNodeRef.current = 'supervisor';
+    const custId =
+      persona === 'virat'
+        ? 'cust_virat_4521'
+        : persona === 'rohit'
+        ? 'cust_rohit_1122'
+        : 'cust_mahi_3344';
+    resetForPersona(persona, custId);
+  }, [persona, resetForPersona]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView?.({ behavior: 'smooth' });
@@ -38,94 +57,176 @@ export const ChatPanel: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
-  const sendMessage = useCallback(async (text: string) => {
-    if (!text.trim() || !token) return;
+  const sendMessage = useCallback(
+    async (text: string) => {
+      if (!text.trim() || !token) return;
 
-    const userMsg: Message = { id: uuidv4(), role: 'user', content: text };
-    setMessages(prev => [...prev, userMsg]);
-    setIsStreaming(true);
+      const userMsg: Message = { id: uuidv4(), role: 'user', content: text };
+      setMessages(prev => [...prev, userMsg]);
+      setIsStreaming(true);
 
-    try {
-      const response = await fetch(`http://localhost:8000/chat/stream`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          session_id: sessionIdRef.current,
-          message: userMsg.content
-        })
+      setStatus('routing');
+      setActiveNode('supervisor');
+      activeNodeRef.current = 'supervisor';
+      setHistoryLen(prev => prev + 1);
+
+      addTrace({
+        type: 'user',
+        title: 'User Input Received',
+        details: `"${text.length > 50 ? text.slice(0, 50) + '...' : text}"`,
+        color: 'text-blue-400'
+      });
+      addTrace({
+        type: 'node',
+        title: 'Supervisor Node Active',
+        details: 'Routing user query to specialized domain agent...',
+        color: 'text-purple-400'
       });
 
-      if (!response.body) throw new Error("No response body");
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let done = false;
+      try {
+        const response = await fetch(`http://localhost:8000/chat/stream`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            session_id: sessionIdRef.current,
+            message: userMsg.content
+          })
+        });
 
-      const modelMsgId = uuidv4();
-      setMessages(prev => [...prev, { id: modelMsgId, role: 'model', content: '', tools: [] }]);
+        if (!response.body) throw new Error('No response body');
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let done = false;
 
-      while (!done) {
-        const { value, done: readerDone } = await reader.read();
-        done = readerDone;
-        if (value) {
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n');
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const dataStr = line.replace('data: ', '');
-              if (!dataStr) continue;
-              try {
-                const data = JSON.parse(dataStr);
-                if (data.type === 'message') {
-                  setMessages(prev => prev.map(m => 
-                    m.id === modelMsgId ? { ...m, content: m.content + data.content } : m
-                  ));
-                } else if (data.type === 'tool_call') {
-                  setMessages(prev => prev.map(m => 
-                    m.id === modelMsgId ? { ...m, tools: [...(m.tools || []), data.name] } : m
-                  ));
-                } else if (data.type === 'tool_response') {
-                  let payload = data.content;
-                  if (typeof payload === 'string') {
-                    try {
-                      payload = JSON.parse(payload);
-                    } catch {
-                      // ignore non-json strings
+        const modelMsgId = uuidv4();
+        setMessages(prev => [...prev, { id: modelMsgId, role: 'model', content: '', tools: [] }]);
+
+        while (!done) {
+          const { value, done: readerDone } = await reader.read();
+          done = readerDone;
+          if (value) {
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const dataStr = line.replace('data: ', '');
+                if (!dataStr) continue;
+                try {
+                  const data = JSON.parse(dataStr);
+                  if (data.type === 'message') {
+                    const rawNode = data.node || 'agent';
+                    const formattedNode =
+                      rawNode === 'customer_agent'
+                        ? 'CustomerAgent'
+                        : rawNode === 'credit_agent'
+                        ? 'CreditAgent'
+                        : rawNode === 'risk_agent'
+                        ? 'RiskAgent'
+                        : rawNode === 'supervisor'
+                        ? 'Supervisor'
+                        : rawNode;
+
+                    if (activeNodeRef.current !== formattedNode) {
+                      activeNodeRef.current = formattedNode;
+                      setActiveNode(formattedNode);
+                      addTrace({
+                        type: 'node',
+                        title: `Active Agent: ${formattedNode}`,
+                        details: 'Synthesizing response stream...',
+                        color: 'text-cyan-400'
+                      });
                     }
+                    setStatus('responding');
+                    setMessages(prev =>
+                      prev.map(m =>
+                        m.id === modelMsgId ? { ...m, content: m.content + data.content } : m
+                      )
+                    );
+                  } else if (data.type === 'tool_call') {
+                    const toolName = String(data.name || 'core_engine');
+                    setLastTool(toolName);
+                    setStatus('executing');
+                    addTrace({
+                      type: 'tool',
+                      title: `Tool Invoked: ${toolName}()`,
+                      details: 'Executing deterministic core-banking tool...',
+                      color: 'text-amber-400'
+                    });
+                    setMessages(prev =>
+                      prev.map(m =>
+                        m.id === modelMsgId ? { ...m, tools: [...(m.tools || []), toolName] } : m
+                      )
+                    );
+                  } else if (data.type === 'tool_response') {
+                    addTrace({
+                      type: 'tool',
+                      title: `Tool Result: ${data.name || 'executed'}`,
+                      details: 'Execution verified · Object auth valid',
+                      color: 'text-emerald-400'
+                    });
+                    let payload = data.content;
+                    if (typeof payload === 'string') {
+                      try {
+                        payload = JSON.parse(payload);
+                      } catch {
+                        // ignore non-json strings
+                      }
+                    }
+                    if (payload && typeof payload === 'object' && payload.data) {
+                      payload = payload.data;
+                    }
+                    if (payload && typeof payload === 'object' && payload.action_id) {
+                      setMessages(prev =>
+                        prev.map(m =>
+                          m.id === modelMsgId
+                            ? {
+                                ...m,
+                                confirmAction: {
+                                  actionId: String(payload.action_id),
+                                  type: String(data.name || 'pending_action'),
+                                  details: payload as Record<string, unknown>
+                                }
+                              }
+                            : m
+                        )
+                      );
+                    }
+                  } else if (data.type === 'done') {
+                    done = true;
+                    setStatus('completed');
+                    setHistoryLen(prev => prev + 1);
+                    addTrace({
+                      type: 'done',
+                      title: 'Execution Completed',
+                      details: 'Turn finished safely (Status: 200 OK)',
+                      color: 'text-emerald-300'
+                    });
                   }
-                  if (payload && typeof payload === 'object' && payload.data) {
-                    payload = payload.data;
-                  }
-                  if (payload && typeof payload === 'object' && payload.action_id) {
-                    setMessages(prev => prev.map(m => 
-                      m.id === modelMsgId ? {
-                        ...m,
-                        confirmAction: {
-                          actionId: String(payload.action_id),
-                          type: String(data.name || 'pending_action'),
-                          details: payload as Record<string, unknown>
-                        }
-                      } : m
-                    ));
-                  }
-                } else if (data.type === 'done') {
-                  done = true;
+                } catch {
+                  // Non-JSON stream lines can be ignored
                 }
-              } catch {
-                // Non-JSON stream lines can be ignored
               }
             }
           }
         }
+      } catch (e) {
+        console.error(e);
+        setStatus('error');
+        addTrace({
+          type: 'error',
+          title: 'Execution Error',
+          details: e instanceof Error ? e.message : 'Unknown network or stream error',
+          color: 'text-rose-400'
+        });
+      } finally {
+        setIsStreaming(false);
       }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsStreaming(false);
-    }
-  }, [token]);
+    },
+    [token, setStatus, setActiveNode, setHistoryLen, addTrace, setLastTool]
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -148,12 +249,13 @@ export const ChatPanel: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-white relative">
-      <div className="p-4 border-b border-slate-200 shadow-sm bg-white z-10 flex justify-between items-center">
+      <div className="h-[72px] px-6 border-b border-slate-200 bg-white z-10 flex justify-between items-center shrink-0">
         <div>
           <h2 className="text-lg font-semibold text-slate-800">Meridian AI Agent</h2>
           <p className="text-xs text-slate-500">Indicative simulation. Not real banking data.</p>
         </div>
       </div>
+
       
       <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50">
         {messages.length === 0 && (

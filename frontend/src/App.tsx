@@ -4,17 +4,21 @@ import { ChatPanel } from './components/chat/ChatPanel';
 import { AgentInspector } from './components/inspector/AgentInspector';
 
 import { AuthProvider } from './context/AuthContext';
+import { InspectorProvider } from './context/InspectorContext';
 
 function App() {
   return (
     <AuthProvider>
-      <AppLayout
-        dashboard={<DashboardPanel />}
-        chat={<ChatPanel />}
-        inspector={<AgentInspector />}
-      />
+      <InspectorProvider>
+        <AppLayout
+          dashboard={<DashboardPanel />}
+          chat={<ChatPanel />}
+          inspector={<AgentInspector />}
+        />
+      </InspectorProvider>
     </AuthProvider>
   );
 }
 
 export default App;
+
