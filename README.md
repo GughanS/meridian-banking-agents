@@ -2,14 +2,13 @@
 
 <p align="center">
   <strong>Enterprise-Grade, Deterministic Multi-Agent Banking Platform</strong><br>
-  Built with LangGraph, Google Gemini 3.1 Pro, FastAPI, and React 18
+  Built with LangGraph, FastAPI, and React 18
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.12-blue?logo=python" alt="Python 3.12">
   <img src="https://img.shields.io/badge/FastAPI-0.115+-009688?logo=fastapi" alt="FastAPI">
   <img src="https://img.shields.io/badge/LangGraph-Multi--Agent-orange" alt="LangGraph">
-  <img src="https://img.shields.io/badge/Google%20GenAI-Gemini%203.1%20Pro-8E75C2?logo=google" alt="Gemini">
   <img src="https://img.shields.io/badge/React-18-61DAFB?logo=react" alt="React 18">
   <img src="https://img.shields.io/badge/TypeScript-Strict-3178C6?logo=typescript" alt="TypeScript">
   <img src="https://img.shields.io/badge/TailwindCSS-3.4-38B2AC?logo=tailwind-css" alt="Tailwind CSS">
@@ -389,8 +388,6 @@ Environment variables can be configured via `.env` in the project root:
 | Variable | Default Value | Description |
 |---|---|---|
 | `LLM_PROVIDER` | `mock` | `mock` for deterministic offline testing; `gemini` for live Google GenAI. |
-| `GEMINI_API_KEY` | `""` | Google GenAI API key (required if `LLM_PROVIDER=gemini`). |
-| `GEMINI_MODEL` | `gemini-3.1-pro` | Model ID for supervisor and specialist reasoning. |
 | `DATABASE_URL` | `sqlite+aiosqlite:///meridian.db` | Async SQLAlchemy database URI. |
 | `CORE_BASE_URL` | `http://localhost:8000/mock-core/v1` | Core banking API base endpoint. |
 | `JWT_SECRET_KEY` | *(32-byte secure key)* | Cryptographic key for signing customer JWT tokens. |
