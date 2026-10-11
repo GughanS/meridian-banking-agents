@@ -70,52 +70,54 @@ Meridian is built against the strict tenets codified in [`AGENTS.md`](./AGENTS.m
 
 ```mermaid
 flowchart TD
-    User([Customer / User]) <-->|HTTP / SSE| UI[React 18 + Vite Frontend]
+    User["Customer / User"] <-->|HTTP / SSE| UI["React 18 + Vite Frontend"]
     
-    subgraph FastAPI_Backend [Meridian FastAPI Backend]
-        Auth[JWT Authentication & Context Injection]
-        Router[API Gateway & Router]
-        Bus[(Async In-Memory Event Bus)]
-        Audit[(Append-Only Audit Log)]
+    subgraph FastAPI_Backend ["Meridian FastAPI Backend"]
+        Auth["JWT Authentication & Context Injection"]
+        Router["API Gateway & Router"]
+        Bus[("Async In-Memory Event Bus")]
+        Audit[("Append-Only Audit Log")]
         
-        subgraph LangGraph_Runtime [LangGraph Supervisor Runtime]
-            Sup[Supervisor Agent]
-            CustAgent[Customer Agent]
-            RiskAgent[Risk Agent]
-            CredAgent[Credit Agent]
+        subgraph LangGraph_Runtime ["LangGraph Supervisor Runtime"]
+            Sup["Supervisor Agent"]
+            CustAgent["Customer Agent"]
+            RiskAgent["Risk Agent"]
+            CredAgent["Credit Agent"]
         end
         
-        subgraph Deterministic_Engines [Deterministic Python Engines (100% Branch Coverage)]
-            EMIEngine[EMI Calculator]
-            EligEngine[Credit Eligibility Engine]
-            FraudRules[Fraud & Rule Engine]
-            ActionEngine[Pending Actions Engine]
+        subgraph Deterministic_Engines ["Deterministic Python Engines - 100% Branch Coverage"]
+            EMIEngine["EMI Calculator"]
+            EligEngine["Credit Eligibility Engine"]
+            FraudRules["Fraud & Rule Engine"]
+            ActionEngine["Pending Actions Engine"]
         end
     end
 
-    subgraph Core_Banking [Institutional Core Banking]
-        MockCore[Mock Core Banking API :8001]
-        DB[(SQLite / PostgreSQL Database)]
+    subgraph Core_Banking ["Institutional Core Banking"]
+        MockCore["Mock Core Banking API - Port 8001"]
+        DB[("SQLite / PostgreSQL Database")]
     end
 
     UI --> Auth
     Auth --> Router
-    Router --> LangGraph_Runtime
+    Router --> Sup
     
     Sup -->|Route Intent| CustAgent
     Sup -->|Route Intent| RiskAgent
     Sup -->|Route Intent| CredAgent
     
-    CustAgent --> Deterministic_Engines
-    RiskAgent --> Deterministic_Engines
-    CredAgent --> Deterministic_Engines
+    CustAgent --> MockCore
+    RiskAgent --> ActionEngine
+    RiskAgent --> FraudRules
+    CredAgent --> EligEngine
+    CredAgent --> EMIEngine
     
-    Deterministic_Engines --> MockCore
+    ActionEngine --> MockCore
     MockCore --> DB
     
     Bus -->|SSE Broadcast| UI
-    Deterministic_Engines -->|Emit Fraud Alerts| Bus
-    LangGraph_Runtime --> Audit
+    FraudRules -->|Emit Alerts| Bus
+    Sup --> Audit
 ```
 
 ---
@@ -126,17 +128,17 @@ The Meridian orchestration layer is built as a compiled StateGraph in LangGraph,
 
 ```mermaid
 graph LR
-    UserQuery([User Message]) --> SupervisorNode[Supervisor Router]
+    UserQuery["User Message"] --> SupervisorNode["Supervisor Router"]
     
-    SupervisorNode -->|Account / Balances / History| CustomerAgent[Customer Support Specialist]
-    SupervisorNode -->|Card Management / Fraud / Freeze| RiskAgent[Risk & Fraud Specialist]
-    SupervisorNode -->|Loan Eligibility / EMI / Credit| CreditAgent[Credit & Underwriting Specialist]
+    SupervisorNode -->|Account / History| CustomerAgent["Customer Support Specialist"]
+    SupervisorNode -->|Card / Fraud| RiskAgent["Risk & Fraud Specialist"]
+    SupervisorNode -->|Loan / Credit| CreditAgent["Credit & Underwriting Specialist"]
     
     CustomerAgent -->|Synthesized Output| SupervisorNode
     RiskAgent -->|Propose Action| SupervisorNode
     CreditAgent -->|Eligibility Result| SupervisorNode
     
-    SupervisorNode --> FinalAnswer([Streaming Agent Response])
+    SupervisorNode --> FinalAnswer["Streaming Agent Response"]
 ```
 
 - **Supervisor Agent:** Analyzes customer intent, validates authorization scope, and routes the turn to the appropriate specialist agent. Achieves **100.00% routing accuracy** in standardized benchmark evaluations.
@@ -158,20 +160,20 @@ sequenceDiagram
     participant Engine as Pending Actions Engine
     participant Core as Core Banking API
     
-    Customer->>Agent: "Please block my debit card immediately"
-    Agent->>Engine: propose_card_action(card_id, "BLOCK")
-    Engine-->>Agent: PendingAction(id="act_49a...", expires_in="300s")
-    Agent-->>Customer: Returns Confirm Card UI Widget
+    Customer->>Agent: Request card block
+    Agent->>Engine: propose_card_action(card_id, BLOCK)
+    Engine-->>Agent: PendingAction (expires in 300s)
+    Agent-->>Customer: Render Confirm Card Widget
     
-    Note over Customer: User reviews Action ID, Card Details, and Reason
+    Note over Customer: User reviews Action ID and Card Details
     
     alt User Confirms
-        Customer->>Core: POST /actions/act_49a.../confirm (Authenticated via JWT)
+        Customer->>Core: POST /actions/confirm (JWT Authenticated)
         Core->>Engine: Validate Action & Expiration
         Engine->>Core: Mutate Card State to BLOCKED
-        Core-->>Customer: 200 OK: Action Executed & Audited
-    else User Cancels or Action Expires (> 5 min)
-        Customer->>Core: POST /actions/act_49a.../cancel
+        Core-->>Customer: 200 OK - Action Executed & Audited
+    else User Cancels or Action Expires
+        Customer->>Core: POST /actions/cancel
         Core->>Engine: Mark Action as CANCELLED / EXPIRED
         Core-->>Customer: Action Voided
     end
