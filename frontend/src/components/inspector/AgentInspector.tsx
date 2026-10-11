@@ -17,8 +17,9 @@ export const AgentInspector: React.FC = () => {
   const traceEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    traceEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    traceEndRef.current?.scrollIntoView?.({ behavior: 'smooth' });
   }, [traces, status]);
+
 
   const customerId =
     persona === 'virat'
