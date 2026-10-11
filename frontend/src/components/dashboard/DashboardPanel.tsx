@@ -13,10 +13,17 @@ interface LiveAlert {
 }
 
 const PERSONA_CONFIG: Record<Persona, { balance: string; account: string }> = {
-  arjun: { balance: '₹ 12,95,000.00', account: 'Account ending in 4521' },
-  priya: { balance: '₹ 85,000.00', account: 'Account ending in 1122' },
-  rahul: { balance: '₹ 12,000.00', account: 'Account ending in 3344' },
+  virat: { balance: '₹ 12,95,000.00', account: 'Account ending in 4521' },
+  rohit: { balance: '₹ 85,000.00', account: 'Account ending in 1122' },
+  mahi: { balance: '₹ 12,000.00', account: 'Account ending in 3344' },
 };
+
+const QUICK_ACTIONS = [
+  { name: 'Transfer', prompt: 'I want to transfer funds to another account' },
+  { name: 'Pay Bills', prompt: 'Help me review and pay my upcoming utility bills' },
+  { name: 'Cards', prompt: 'I lost my debit card, please block it.' },
+  { name: 'Loans', prompt: 'What are my loan options and calculate indicative EMI?' },
+];
 
 export const DashboardPanel: React.FC = () => {
   const { persona, switchPersona, isLoading, token } = useAuth();
@@ -91,9 +98,9 @@ export const DashboardPanel: React.FC = () => {
               className="font-semibold text-lg bg-transparent focus:outline-none cursor-pointer hover:bg-slate-50 rounded px-1 -ml-1 transition-colors"
               disabled={isLoading}
             >
-              <option value="arjun">Arjun (Tech Worker)</option>
-              <option value="priya">Priya (Small Business)</option>
-              <option value="rahul">Rahul (Student)</option>
+              <option value="virat">Virat (Tech Worker)</option>
+              <option value="rohit">Rohit (Small Business)</option>
+              <option value="mahi">Mahi (Student)</option>
             </select>
           </div>
         </div>
@@ -117,9 +124,16 @@ export const DashboardPanel: React.FC = () => {
         <div>
           <h3 className="text-sm font-semibold text-slate-900 mb-4 uppercase tracking-wider">Quick Actions</h3>
           <div className="grid grid-cols-2 gap-3">
-            {['Transfer', 'Pay Bills', 'Cards', 'Loans'].map((action) => (
-              <button key={action} className="p-3 text-sm font-medium bg-white border border-slate-200 rounded-lg shadow-sm hover:border-blue-300 hover:text-blue-600 transition-colors text-left">
-                {action}
+            {QUICK_ACTIONS.map((action) => (
+              <button
+                key={action.name}
+                onClick={() => window.dispatchEvent(new CustomEvent('meridian:quick-action', { detail: action.prompt }))}
+                className="p-3 text-sm font-medium bg-white border border-slate-200 rounded-lg shadow-sm hover:border-blue-400 hover:text-blue-600 active:scale-95 transition-all text-left group"
+              >
+                <span className="font-semibold">{action.name}</span>
+                <span className="block text-[11px] text-slate-400 group-hover:text-blue-500 transition-colors truncate mt-0.5">
+                  Ask Agent &rarr;
+                </span>
               </button>
             ))}
           </div>

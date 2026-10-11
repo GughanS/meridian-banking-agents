@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 
 export const AgentInspector: React.FC = () => {
   const { persona } = useAuth();
-  const customerId = persona === 'arjun' ? 'cust_arjun_4521' : persona === 'priya' ? 'cust_priya_1122' : 'cust_rahul_3344';
+  const customerId = persona === 'virat' ? 'cust_virat_4521' : persona === 'rohit' ? 'cust_rohit_1122' : 'cust_mahi_3344';
 
   return (
     <div className="w-80 h-full bg-slate-900 text-slate-300 flex flex-col font-mono text-xs border-l border-slate-800">

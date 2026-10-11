@@ -18,7 +18,7 @@ DATASET = [
     ("What are my latest transactions?", "customer_agent"),
     ("I see a transaction I didn't make", "risk_agent"),
     ("Is my credit score good enough for a 50k loan?", "credit_agent"),
-    ("Transfer 100 to Rahul", "customer_agent"),
+    ("Transfer 100 to Rohit", "customer_agent"),
     ("My account has been compromised", "risk_agent"),
     ("Calculate my EMI for a 200k loan over 5 years", "credit_agent"),
     ("Change my address to New York", "customer_agent")

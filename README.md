@@ -187,9 +187,9 @@ Meridian seeds deterministic customer profiles on startup:
 
 | Persona | Name | Role / Profile | Monthly Income | Credit Score | Initial Balance | Test Scenarios |
 |---|---|---|---|---|---|---|
-| `arjun` | **Arjun Mehta** | Tech Worker | ₹2,50,000 | 780 (Excellent) | ₹1,45,000.00 | Account queries, card blocking (HITL), high-value credit applications. |
-| `priya` | **Priya Sharma** | Small Business Owner | ₹1,80,000 | 720 (Good) | ₹3,20,500.50 | Business loan underwriting, high-velocity transactions, overseas fraud alerts. |
-| `rahul` | **Rahul Verma** | University Student | ₹25,000 | 610 (Fair) | ₹4,850.00 | Low-balance warnings, overdraft protection, loan rejection explanations. |
+| `virat` | **Virat Kohli** | Tech Worker | ₹2,50,000 | 780 (Excellent) | ₹12,95,000.00 | Account queries, card blocking (HITL), high-value credit applications. |
+| `rohit` | **Rohit Sharma** | Small Business Owner | ₹1,80,000 | 720 (Good) | ₹85,000.00 | Business loan underwriting, high-velocity transactions, overseas fraud alerts. |
+| `mahi` | **Mahi Dhoni** | University Student | ₹25,000 | 610 (Fair) | ₹12,000.00 | Low-balance warnings, overdraft protection, loan rejection explanations. |
 
 ---
 
@@ -208,7 +208,7 @@ Meridian seeds deterministic customer profiles on startup:
 - **Execution:** Routed to `credit_agent` &rarr; deterministic eligibility engine evaluates DTI, credit score, and income &rarr; EMI calculation engine applies amortization math ($E = P \cdot r \cdot \frac{(1+r)^n}{(1+r)^n - 1}$) &rarr; displays indicative breakdown.
 
 ### UC4: Low-Balance Risk Guardrails
-- **Input:** Tested with Rahul persona requesting a loan or transfer exceeding affordability limits.
+- **Input:** Tested with Mahi persona requesting a loan or transfer exceeding affordability limits.
 - **Execution:** Deterministic engine rejects the proposal; agent politely explains financial health factors and alternatives.
 
 ### UC8: Real-Time Async Event Bus & Autonomous Fraud Monitor
@@ -303,7 +303,7 @@ cd backend
 # Install dependencies with uv
 uv sync
 
-# Seed deterministic personas (Arjun, Priya, Rahul)
+# Seed deterministic personas (Virat, Rohit, Mahi)
 uv run python -m scripts.seed
 
 # Start FastAPI server

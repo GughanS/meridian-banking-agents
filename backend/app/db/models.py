@@ -15,7 +15,7 @@ def JSONColumn():
 
 class Customer(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
-    persona_id: str = Field(index=True)  # arjun, priya, rahul
+    persona_id: str = Field(index=True)  # virat, rohit, mahi
     name: str
     email: str
     phone: str

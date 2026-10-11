@@ -21,10 +21,10 @@ async def setup_db():
         cust = Customer(
             id=uuid.uuid4(),
             persona_id="test_persona",
-            first_name="Arjun",
+            first_name="Virat",
             last_name="Test",
-            name="Arjun Test",
-            email="arjun@example.com",
+            name="Virat Test",
+            email="virat@example.com",
             phone="+919876543210"
         )
         db.add(cust)
@@ -34,7 +34,7 @@ async def setup_db():
 @pytest.mark.asyncio
 async def test_auth_login():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        response = await client.post("/auth/login", json={"email": "arjun@example.com"})
+        response = await client.post("/auth/login", json={"email": "virat@example.com"})
         assert response.status_code == 200
         assert "access_token" in response.json()
         
@@ -53,7 +53,7 @@ async def test_chat_authorized(monkeypatch):
     os.environ["LLM_PROVIDER"] = "mock"
     
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        login_res = await client.post("/auth/login", json={"email": "arjun@example.com"})
+        login_res = await client.post("/auth/login", json={"email": "virat@example.com"})
         token = login_res.json()["access_token"]
         
         headers = {"Authorization": f"Bearer {token}"}
@@ -84,7 +84,7 @@ async def test_action_confirm():
         await db.refresh(action)
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        login_res = await client.post("/auth/login", json={"email": "arjun@example.com"})
+        login_res = await client.post("/auth/login", json={"email": "virat@example.com"})
         token = login_res.json()["access_token"]
         
         headers = {"Authorization": f"Bearer {token}"}

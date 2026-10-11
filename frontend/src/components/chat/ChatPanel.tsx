@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { v4 as uuidv4 } from 'uuid';
 import ReactMarkdown from 'react-markdown';
@@ -38,13 +38,11 @@ export const ChatPanel: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || !token) return;
+  const sendMessage = useCallback(async (text: string) => {
+    if (!text.trim() || !token) return;
 
-    const userMsg: Message = { id: uuidv4(), role: 'user', content: input };
+    const userMsg: Message = { id: uuidv4(), role: 'user', content: text };
     setMessages(prev => [...prev, userMsg]);
-    setInput('');
     setIsStreaming(true);
 
     try {
@@ -127,7 +125,26 @@ export const ChatPanel: React.FC = () => {
     } finally {
       setIsStreaming(false);
     }
+  }, [token]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || !token) return;
+    const msg = input;
+    setInput('');
+    sendMessage(msg);
   };
+
+  useEffect(() => {
+    const handleQuickAction = (e: Event) => {
+      const customEvent = e as CustomEvent<string>;
+      if (customEvent.detail && token) {
+        sendMessage(customEvent.detail);
+      }
+    };
+    window.addEventListener('meridian:quick-action', handleQuickAction);
+    return () => window.removeEventListener('meridian:quick-action', handleQuickAction);
+  }, [token, sendMessage]);
 
   return (
     <div className="flex-1 flex flex-col h-full bg-white relative">

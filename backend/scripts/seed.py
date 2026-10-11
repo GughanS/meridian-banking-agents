@@ -54,76 +54,76 @@ async def seed_data():
         db.add_all([p1, p2, p3])
         await db.commit()
 
-        # Persona 1: Arjun Mehta (Prime)
-        arjun = Customer(persona_id="arjun", name="Arjun Mehta", email="arjun@example.com", phone="+919876543210")
-        db.add(arjun)
+        # Persona 1: Virat Kohli (Prime / Salaried)
+        virat = Customer(persona_id="virat", name="Virat Kohli", email="virat@example.com", phone="+919876543210")
+        db.add(virat)
         await db.commit()
         
-        arjun_cp = CreditProfile(customer_id=arjun.id, score=782, monthly_income=Decimal(180000), monthly_obligations=Decimal(35000), employment_status="Salaried", months_employed=84, recent_delinquency_dpd=0)
-        db.add(arjun_cp)
+        virat_cp = CreditProfile(customer_id=virat.id, score=782, monthly_income=Decimal(180000), monthly_obligations=Decimal(35000), employment_status="Salaried", months_employed=84, recent_delinquency_dpd=0)
+        db.add(virat_cp)
         
-        arjun_acc1 = Account(customer_id=arjun.id, account_type="savings", balance=Decimal(1250000), currency="INR")
-        arjun_acc2 = Account(customer_id=arjun.id, account_type="checking", balance=Decimal(45000), currency="INR")
-        db.add_all([arjun_acc1, arjun_acc2])
+        virat_acc1 = Account(customer_id=virat.id, account_type="savings", balance=Decimal(1250000), currency="INR")
+        virat_acc2 = Account(customer_id=virat.id, account_type="checking", balance=Decimal(45000), currency="INR")
+        db.add_all([virat_acc1, virat_acc2])
         await db.commit()
 
-        arjun_dc = Card(customer_id=arjun.id, account_id=arjun_acc1.id, card_type="debit", last4="4521")
-        arjun_cc = Card(customer_id=arjun.id, account_id=arjun_acc2.id, card_type="credit", last4="9832")
-        db.add_all([arjun_dc, arjun_cc])
+        virat_dc = Card(customer_id=virat.id, account_id=virat_acc1.id, card_type="debit", last4="4521")
+        virat_cc = Card(customer_id=virat.id, account_id=virat_acc2.id, card_type="credit", last4="9832")
+        db.add_all([virat_dc, virat_cc])
         
-        arjun_loan = LoanAccount(customer_id=arjun.id, product_id="auto", amount=Decimal(1500000), tenure_months=60, rate=Decimal("9.5"), emi=Decimal(31500))
-        db.add(arjun_loan)
+        virat_loan = LoanAccount(customer_id=virat.id, product_id="auto", amount=Decimal(1500000), tenure_months=60, rate=Decimal("9.5"), emi=Decimal(31500))
+        db.add(virat_loan)
 
-        # Generate normal txs for Arjun
+        # Generate normal txs for Virat
         for _ in range(300):
-            db.add(random_tx(arjun_acc1.id, "debit", "dining", 500, 5000, "5812", fake.company(), days_ago=random.randint(1, 360)))
+            db.add(random_tx(virat_acc1.id, "debit", "dining", 500, 5000, "5812", fake.company(), days_ago=random.randint(1, 360)))
 
-        # Persona 2: Priya Raman (Mid)
-        priya = Customer(persona_id="priya", name="Priya Raman", email="priya@example.com", phone="+918765432109")
-        db.add(priya)
+        # Persona 2: Rohit Sharma (Mid / Small Business)
+        rohit = Customer(persona_id="rohit", name="Rohit Sharma", email="rohit@example.com", phone="+918765432109")
+        db.add(rohit)
         await db.commit()
 
-        priya_cp = CreditProfile(customer_id=priya.id, score=684, monthly_income=Decimal(75000), monthly_obligations=Decimal(15000), employment_status="Salaried", months_employed=36, recent_delinquency_dpd=0)
-        db.add(priya_cp)
+        rohit_cp = CreditProfile(customer_id=rohit.id, score=684, monthly_income=Decimal(75000), monthly_obligations=Decimal(15000), employment_status="Salaried", months_employed=36, recent_delinquency_dpd=0)
+        db.add(rohit_cp)
         
-        priya_acc = Account(customer_id=priya.id, account_type="savings", balance=Decimal(85000), currency="INR")
-        db.add(priya_acc)
+        rohit_acc = Account(customer_id=rohit.id, account_type="savings", balance=Decimal(85000), currency="INR")
+        db.add(rohit_acc)
         await db.commit()
 
-        priya_dc = Card(customer_id=priya.id, account_id=priya_acc.id, card_type="debit", last4="1122")
-        db.add(priya_dc)
+        rohit_dc = Card(customer_id=rohit.id, account_id=rohit_acc.id, card_type="debit", last4="1122")
+        db.add(rohit_dc)
         
-        # Normal txs for Priya
+        # Normal txs for Rohit
         for _ in range(200):
-            db.add(random_tx(priya_acc.id, "debit", "groceries", 200, 3000, "5411", fake.company(), days_ago=random.randint(5, 360)))
+            db.add(random_tx(rohit_acc.id, "debit", "groceries", 200, 3000, "5411", fake.company(), days_ago=random.randint(5, 360)))
 
         # Suspicious Tx 1: Foreign card-not-present
-        db.add(random_tx(priya_acc.id, "debit", "shopping", 25000, 25000, "5999", "Steam Games", country="US", days_ago=1))
+        db.add(random_tx(rohit_acc.id, "debit", "shopping", 25000, 25000, "5999", "Steam Games", country="US", days_ago=1))
         
         # Suspicious Tx 2: High-risk MCC (Crypto)
-        db.add(random_tx(priya_acc.id, "debit", "transfer", 50000, 50000, "6051", "Binance", country="IE", days_ago=2))
+        db.add(random_tx(rohit_acc.id, "debit", "transfer", 50000, 50000, "6051", "Binance", country="IE", days_ago=2))
         
         # Suspicious Tx 3: Velocity burst
         for _ in range(4):
-            db.add(random_tx(priya_acc.id, "debit", "entertainment", 1500, 1500, "7999", "Netflix", country="IN", days_ago=0))
+            db.add(random_tx(rohit_acc.id, "debit", "entertainment", 1500, 1500, "7999", "Netflix", country="IN", days_ago=0))
 
-        # Persona 3: Rahul Verma (Stretched)
-        rahul = Customer(persona_id="rahul", name="Rahul Verma", email="rahul@example.com", phone="+917654321098")
-        db.add(rahul)
+        # Persona 3: Mahi (Student / Stretched)
+        mahi = Customer(persona_id="mahi", name="Mahi", email="mahi@example.com", phone="+917654321098")
+        db.add(mahi)
         await db.commit()
 
-        rahul_cp = CreditProfile(customer_id=rahul.id, score=598, monthly_income=Decimal(40000), monthly_obligations=Decimal(32000), employment_status="Self-employed", months_employed=12, recent_delinquency_dpd=45)
-        db.add(rahul_cp)
+        mahi_cp = CreditProfile(customer_id=mahi.id, score=598, monthly_income=Decimal(40000), monthly_obligations=Decimal(32000), employment_status="Self-employed", months_employed=12, recent_delinquency_dpd=45)
+        db.add(mahi_cp)
         
-        rahul_acc = Account(customer_id=rahul.id, account_type="savings", balance=Decimal(12000), currency="INR")
-        db.add(rahul_acc)
+        mahi_acc = Account(customer_id=mahi.id, account_type="savings", balance=Decimal(12000), currency="INR")
+        db.add(mahi_acc)
         await db.commit()
 
-        rahul_dc = Card(customer_id=rahul.id, account_id=rahul_acc.id, card_type="debit", last4="3344")
-        db.add(rahul_dc)
+        mahi_dc = Card(customer_id=mahi.id, account_id=mahi_acc.id, card_type="debit", last4="3344")
+        db.add(mahi_dc)
 
         for _ in range(100):
-            db.add(random_tx(rahul_acc.id, "debit", "utilities", 500, 2000, "4900", fake.company(), days_ago=random.randint(1, 360)))
+            db.add(random_tx(mahi_acc.id, "debit", "utilities", 500, 2000, "4900", fake.company(), days_ago=random.randint(1, 360)))
         
         await db.commit()
         print("Database seeded successfully.")

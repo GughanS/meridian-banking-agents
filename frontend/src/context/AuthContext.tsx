@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { login } from '../api/client';
 
-export type Persona = 'arjun' | 'priya' | 'rahul';
+export type Persona = 'virat' | 'rohit' | 'mahi';
 
 interface AuthContextType {
   token: string | null;
@@ -14,11 +14,11 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [token, setToken] = useState<string | null>(null);
-  const [persona, setPersona] = useState<Persona>('arjun');
+  const [persona, setPersona] = useState<Persona>('virat');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    switchPersona('arjun');
+    switchPersona('virat');
   }, []);
 
   const switchPersona = async (p: Persona) => {

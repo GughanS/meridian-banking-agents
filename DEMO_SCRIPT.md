@@ -27,26 +27,26 @@ docker-compose up -d
 This will:
 1. Sync Python dependencies via `uv`.
 2. Install Node dependencies via `npm`.
-3. Seed the local SQLite database with deterministically generated personas (Arjun, Priya, Rahul).
+3. Seed the local SQLite database with deterministically generated personas (Virat, Rohit, Mahi).
 4. Spin up the backend (FastAPI) and frontend (React/Vite) via Docker Compose.
 
 Visit **http://localhost:5173** to view the app.
 
 ## Step 2: Explore Personas
 Use the dropdown in the top left to switch personas:
-- **Arjun (Tech Worker):** High income, stable. Perfect for testing large loan applications.
-- **Priya (Small Business):** High transaction volume. Perfect for testing anomaly detection (fraud).
-- **Rahul (Student):** Low balance. Perfect for testing rejected transactions or eligibility failures.
+- **Virat (Tech Worker):** High income, stable. Perfect for testing large loan applications.
+- **Rohit (Small Business):** High transaction volume. Perfect for testing anomaly detection (fraud).
+- **Mahi (Student):** Low balance. Perfect for testing rejected transactions or eligibility failures.
 
 ## Step 3: Run the Use Cases
 
 ### UC1: Transaction Intent Routing & Retrieval
-**Persona:** Arjun
+**Persona:** Virat
 **Input:** "What is my balance and what were my last 3 transactions?"
 **Watch for:** The Agent Inspector pane will show the `supervisor` routing the intent to the `customer_agent`. The UI will stream a summary of the transactions.
 
 ### UC2: Agent-to-Agent Handoff & Human-in-the-Loop Write
-**Persona:** Arjun
+**Persona:** Virat
 **Input:** "I lost my card, please block it."
 **Watch for:** 
 1. The `supervisor` hands off to the `risk_agent`.
@@ -55,7 +55,7 @@ Use the dropdown in the top left to switch personas:
 4. Click **Confirm** to execute the two-phase write.
 
 ### UC3: Multi-Step Credit Evaluation
-**Persona:** Priya
+**Persona:** Rohit
 **Input:** "I need a 50,000 loan for my business over 24 months. Am I eligible and what's the EMI?"
 **Watch for:** 
 1. Handoff to `credit_agent`.
