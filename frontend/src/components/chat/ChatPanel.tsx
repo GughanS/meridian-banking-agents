@@ -3,12 +3,18 @@ import { useAuth } from '../../context/AuthContext';
 import { v4 as uuidv4 } from 'uuid';
 import ReactMarkdown from 'react-markdown';
 import { Send, Loader2 } from 'lucide-react';
+import { ConfirmCard } from '../blocks/ConfirmCard';
 
 interface Message {
   id: string;
   role: 'user' | 'model';
   content: string;
   tools?: string[];
+  confirmAction?: {
+    actionId: string;
+    type: string;
+    details: Record<string, unknown>;
+  };
 }
 
 export const ChatPanel: React.FC = () => {
@@ -82,6 +88,19 @@ export const ChatPanel: React.FC = () => {
                   setMessages(prev => prev.map(m => 
                     m.id === modelMsgId ? { ...m, tools: [...(m.tools || []), data.name] } : m
                   ));
+                } else if (data.type === 'tool_response') {
+                  if (data.content && typeof data.content === 'object' && data.content.action_id) {
+                    setMessages(prev => prev.map(m => 
+                      m.id === modelMsgId ? {
+                        ...m,
+                        confirmAction: {
+                          actionId: String(data.content.action_id),
+                          type: String(data.name || 'pending_action'),
+                          details: data.content as Record<string, unknown>
+                        }
+                      } : m
+                    ));
+                  }
                 } else if (data.type === 'done') {
                   done = true;
                 }
@@ -132,6 +151,15 @@ export const ChatPanel: React.FC = () => {
               <div className="prose prose-sm prose-slate max-w-none">
                 <ReactMarkdown>{msg.content}</ReactMarkdown>
               </div>
+
+              {msg.confirmAction && (
+                <ConfirmCard 
+                  actionId={msg.confirmAction.actionId}
+                  type={msg.confirmAction.type}
+                  details={msg.confirmAction.details}
+                  onResolved={() => {}}
+                />
+              )}
             </div>
           </div>
         ))}

@@ -13,12 +13,14 @@ interface ConfirmCardProps {
 export const ConfirmCard: React.FC<ConfirmCardProps> = ({ actionId, type, details, onResolved }) => {
   const { token } = useAuth();
   const [isProcessing, setIsProcessing] = React.useState(false);
+  const [resolvedStatus, setResolvedStatus] = React.useState<'pending' | 'confirmed' | 'cancelled'>('pending');
 
   const handleConfirm = async () => {
     if (!token) return;
     setIsProcessing(true);
     try {
       await confirmAction(actionId, token);
+      setResolvedStatus('confirmed');
       onResolved('confirmed');
     } catch (e) {
       console.error(e);
@@ -32,6 +34,7 @@ export const ConfirmCard: React.FC<ConfirmCardProps> = ({ actionId, type, detail
     setIsProcessing(true);
     try {
       await cancelAction(actionId, token);
+      setResolvedStatus('cancelled');
       onResolved('cancelled');
     } catch (e) {
       console.error(e);
@@ -39,6 +42,24 @@ export const ConfirmCard: React.FC<ConfirmCardProps> = ({ actionId, type, detail
       setIsProcessing(false);
     }
   };
+
+  if (resolvedStatus === 'confirmed') {
+    return (
+      <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl p-4 my-3 text-sm flex items-center gap-2">
+        <Check size={18} className="text-emerald-600" />
+        <span className="font-medium">Action Confirmed & Executed Successfully</span>
+      </div>
+    );
+  }
+
+  if (resolvedStatus === 'cancelled') {
+    return (
+      <div className="bg-slate-50 border border-slate-200 text-slate-600 rounded-xl p-4 my-3 text-sm flex items-center gap-2">
+        <X size={18} className="text-slate-400" />
+        <span className="font-medium">Action Cancelled</span>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm my-4 w-full max-w-md">
