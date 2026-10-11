@@ -2,9 +2,19 @@ import React, { useEffect, useState } from 'react';
 import { useAuth, type Persona } from '../../context/AuthContext';
 import { User, Wallet, Bell } from 'lucide-react';
 
+interface LiveAlert {
+  id?: string;
+  type?: string;
+  title: string;
+  message: string;
+  score?: number;
+  level?: string;
+  rules?: string[];
+}
+
 export const DashboardPanel: React.FC = () => {
   const { persona, switchPersona, isLoading, token } = useAuth();
-  const [alerts, setAlerts] = useState<Record<string, unknown>[]>([]);
+  const [alerts, setAlerts] = useState<LiveAlert[]>([]);
 
   useEffect(() => {
     if (!token) return;
@@ -39,7 +49,7 @@ export const DashboardPanel: React.FC = () => {
               try {
                 const data = JSON.parse(line.replace('data: ', ''));
                 if (data.type === 'FRAUD_ALERT') {
-                  setAlerts(prev => [data, ...prev]);
+                  setAlerts(prev => [data as LiveAlert, ...prev]);
                 }
               } catch {
                 // Non-JSON stream lines can be ignored
