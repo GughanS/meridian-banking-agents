@@ -1,7 +1,11 @@
 import React from 'react';
 import { Activity, Terminal, Database, ShieldCheck } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 export const AgentInspector: React.FC = () => {
+  const { persona } = useAuth();
+  const customerId = persona === 'arjun' ? 'cust_arjun_4521' : persona === 'priya' ? 'cust_priya_1122' : 'cust_rahul_3344';
+
   return (
     <div className="w-80 h-full bg-slate-900 text-slate-300 flex flex-col font-mono text-xs border-l border-slate-800">
       <div className="p-4 border-b border-slate-800 bg-slate-950 flex items-center gap-2 text-blue-400">
@@ -38,7 +42,7 @@ export const AgentInspector: React.FC = () => {
           <div className="bg-slate-950 p-3 rounded border border-slate-800 text-green-300/80 overflow-hidden">
             <pre>
 {`{
-  "customer_id": "cust_123",
+  "customer_id": "${customerId}",
   "active_node": "supervisor",
   "history_len": 4
 }`}

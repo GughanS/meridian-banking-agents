@@ -10,8 +10,8 @@ AGENT_CONFIGS = {
         "tools": ["get_customer_profile", "get_accounts", "get_transactions", "get_cards", "propose_card_block"]
     },
     "RiskAgent": {
-        "prompt": "You are the Risk Agent. You handle fraud alerts, disputes, and fraud escalation. You MUST use tools to answer questions.",
-        "tools": ["get_fraud_alerts", "get_disputes", "propose_dispute", "escalate_fraud"]
+        "prompt": "You are the Risk Agent. You handle fraud alerts, disputes, card security, and fraud escalation. You MUST use tools to answer questions.",
+        "tools": ["get_fraud_alerts", "get_disputes", "propose_dispute", "escalate_fraud", "get_cards", "propose_card_block"]
     },
     "CreditAgent": {
         "prompt": "You are the Credit Agent. You handle credit scores, loan options, EMI calculators, and applications. You MUST use tools to answer questions.",

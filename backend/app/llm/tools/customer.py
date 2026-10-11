@@ -1,3 +1,4 @@
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -7,6 +8,11 @@ from app.engines.pending_actions import create_pending_action
 from app.llm.registry import ToolContext, registry
 
 
+def _unwrap_data(val: Any) -> Any:
+    if isinstance(val, dict) and "data" in val:
+        return val["data"]
+    return val
+
 class EmptyArgs(BaseModel):
     pass
 
@@ -15,18 +21,20 @@ class EmptyArgs(BaseModel):
     description="Retrieve the customer's personal profile information.",
     schema=EmptyArgs
 )
-async def get_customer_profile(ctx: ToolContext, **kwargs) -> dict:
+async def get_customer_profile(ctx: ToolContext, **kwargs: Any) -> Any:
     client = CoreBankingClient()
-    return await client.get_customer(ctx.customer_id)
+    res = await client.get_customer(str(ctx.customer_id))
+    return _unwrap_data(res)
 
 @registry.register(
     name="get_accounts",
     description="Retrieve the customer's bank accounts and current balances.",
     schema=EmptyArgs
 )
-async def get_accounts(ctx: ToolContext, **kwargs) -> list:
+async def get_accounts(ctx: ToolContext, **kwargs: Any) -> Any:
     client = CoreBankingClient()
-    return await client.get_accounts(ctx.customer_id)
+    res = await client.get_accounts(str(ctx.customer_id))
+    return _unwrap_data(res)
 
 class GetTransactionsArgs(BaseModel):
     account_id: UUID = Field(..., description="The ID of the account")
@@ -37,21 +45,27 @@ class GetTransactionsArgs(BaseModel):
     description="Retrieve transaction history for a specific account.",
     schema=GetTransactionsArgs
 )
-async def get_transactions(ctx: ToolContext, account_id: UUID, limit: int) -> list:
+async def get_transactions(ctx: ToolContext, account_id: UUID, limit: int) -> Any:
     client = CoreBankingClient()
-    accounts = await client.get_accounts(ctx.customer_id)
-    if str(account_id) not in [str(a["id"]) for a in accounts]:
+    accounts_res = await client.get_accounts(str(ctx.customer_id))
+    accounts_data = _unwrap_data(accounts_res)
+    accounts = accounts_data if isinstance(accounts_data, list) else []
+    
+    valid_ids = [str(a.get("id") if isinstance(a, dict) else getattr(a, "id", a)) for a in accounts]
+    if str(account_id) not in valid_ids:
         raise ValueError("Unauthorized: Account does not belong to the current customer.")
-    return await client.get_transactions(account_id, limit)
+    tx_res = await client.get_transactions(str(account_id), {"limit": limit})
+    return _unwrap_data(tx_res)
 
 @registry.register(
     name="get_cards",
     description="Retrieve the customer's debit and credit cards.",
     schema=EmptyArgs
 )
-async def get_cards(ctx: ToolContext, **kwargs) -> list:
+async def get_cards(ctx: ToolContext, **kwargs: Any) -> Any:
     client = CoreBankingClient()
-    return await client.get_cards(ctx.customer_id)
+    res = await client.get_cards(str(ctx.customer_id))
+    return _unwrap_data(res)
 
 class ProposeCardBlockArgs(BaseModel):
     card_id: UUID = Field(..., description="The ID of the card to block")
@@ -62,10 +76,14 @@ class ProposeCardBlockArgs(BaseModel):
     description="Proposes blocking a customer's debit or credit card. Must be confirmed by the user.",
     schema=ProposeCardBlockArgs
 )
-async def propose_card_block(ctx: ToolContext, card_id: UUID, reason: str) -> dict:
+async def propose_card_block(ctx: ToolContext, card_id: UUID, reason: str) -> dict[str, Any]:
     client = CoreBankingClient()
-    cards = await client.get_cards(ctx.customer_id)
-    if str(card_id) not in [str(c["id"]) for c in cards]:
+    cards_res = await client.get_cards(str(ctx.customer_id))
+    cards_data = _unwrap_data(cards_res)
+    cards = cards_data if isinstance(cards_data, list) else []
+    
+    valid_card_ids = [str(c.get("id") if isinstance(c, dict) else getattr(c, "id", c)) for c in cards]
+    if str(card_id) not in valid_card_ids:
         raise ValueError("Unauthorized: Card does not belong to the current customer.")
         
     payload = {"card_id": str(card_id), "action": "block", "reason": reason}

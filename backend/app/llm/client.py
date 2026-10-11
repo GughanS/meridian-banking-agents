@@ -126,6 +126,20 @@ class MockLLMClient:
         tool_msgs = [m for m in messages if isinstance(m, dict) and m.get("role") == "tool"]
         tool_names_called = [m.get("tool_name") for m in tool_msgs]
 
+        def _get_items(content: Any) -> list[Any]:
+            if isinstance(content, list):
+                return content
+            if isinstance(content, dict):
+                if "data" in content and isinstance(content["data"], list):
+                    return content["data"]  # type: ignore
+                return [content]
+            return []
+
+        def _get_field(item: Any, key: str, default: Any = None) -> Any:
+            if isinstance(item, dict):
+                return item.get(key, default)
+            return getattr(item, key, default)
+
         if "Supervisor" in system_prompt:
             if any(k in user_text for k in ["loan", "emi", "credit", "borrow"]):
                 resp_text = "CreditAgent"
@@ -142,31 +156,37 @@ class MockLLMClient:
                 elif any(k in user_text for k in ["transaction", "last"]) and "get_transactions" not in tool_names_called:
                     acc_id = None
                     for tm in tool_msgs:
-                        if tm.get("tool_name") == "get_accounts" and isinstance(tm.get("content"), list) and tm["content"]:
-                            acc_id = tm["content"][0].get("id")
-                            break
+                        if tm.get("tool_name") == "get_accounts":
+                            items = _get_items(tm.get("content"))
+                            if items:
+                                acc_id = _get_field(items[0], "id")
+                                break
                     if acc_id:
-                        func_calls = [MockFunctionCallWrapper("get_transactions", {"account_id": acc_id, "limit": 3})]
+                        func_calls = [MockFunctionCallWrapper("get_transactions", {"account_id": str(acc_id), "limit": 3})]
                 
                 if not func_calls:
                     acc_info = ""
                     for tm in tool_msgs:
-                        if tm.get("tool_name") == "get_accounts" and isinstance(tm.get("content"), list) and tm["content"]:
-                            acc = tm["content"][0]
-                            bal = float(acc.get("balance", 0))
-                            num = str(acc.get("account_number", "4021"))
-                            acc_info = f"Your current balance is **₹{bal:,.2f}** (Account ending in **{num[-4:]}**).\n\n"
-                            break
+                        if tm.get("tool_name") == "get_accounts":
+                            items = _get_items(tm.get("content"))
+                            if items:
+                                acc = items[0]
+                                bal = float(_get_field(acc, "balance", 0))
+                                num = str(_get_field(acc, "account_number", "4021"))
+                                acc_info = f"Your current balance is **₹{bal:,.2f}** (Account ending in **{num[-4:]}**).\n\n"
+                                break
 
                     tx_info = ""
                     for tm in tool_msgs:
-                        if tm.get("tool_name") == "get_transactions" and isinstance(tm.get("content"), list) and tm["content"]:
-                            txs = tm["content"][:3]
-                            tx_info = "### Recent Transactions:\n" + "\n".join(
-                                f"- **{t.get('merchant', 'Vendor')}**: ₹{abs(float(t.get('amount', 0))):,.2f} ({t.get('category', 'General').title()})"
-                                for t in txs
-                            )
-                            break
+                        if tm.get("tool_name") == "get_transactions":
+                            items = _get_items(tm.get("content"))
+                            if items:
+                                txs = items[:3]
+                                tx_info = "### Recent Transactions:\n" + "\n".join(
+                                    f"- **{_get_field(t, 'merchant', 'Vendor')}**: ₹{abs(float(_get_field(t, 'amount', 0))):,.2f} ({str(_get_field(t, 'category', 'General')).title()})"
+                                    for t in txs
+                                )
+                                break
                     
                     if acc_info or tx_info:
                         resp_text = (acc_info + tx_info).strip()
@@ -178,19 +198,29 @@ class MockLLMClient:
                 elif "propose_card_block" not in tool_names_called:
                     card_id = None
                     for tm in tool_msgs:
-                        if tm.get("tool_name") == "get_cards" and isinstance(tm.get("content"), list) and tm["content"]:
-                            card_id = tm["content"][0].get("id")
-                            break
+                        if tm.get("tool_name") == "get_cards":
+                            items = _get_items(tm.get("content"))
+                            if items:
+                                card_id = _get_field(items[0], "id")
+                                break
                     if card_id:
-                        func_calls = [MockFunctionCallWrapper("propose_card_block", {"card_id": card_id, "reason": "Customer reported card lost/stolen"})]
+                        func_calls = [MockFunctionCallWrapper("propose_card_block", {"card_id": str(card_id), "reason": "Customer reported card lost/stolen"})]
                 
                 if not func_calls:
                     act_id = "pending"
+                    card_desc = "debit card"
                     for tm in tool_msgs:
-                        if tm.get("tool_name") == "propose_card_block" and isinstance(tm.get("content"), dict):
-                            act_id = tm["content"].get("action_id", "pending")
-                            break
-                    resp_text = f"⚠️ **Card Block Proposed**\n\nI have created a pending action to block your debit card. For your security, this action requires your explicit confirmation before execution.\n\n**Action ID:** `{act_id}`\n\n*Please review and confirm below (expires in 5 minutes):*"
+                        if tm.get("tool_name") == "get_cards":
+                            items = _get_items(tm.get("content"))
+                            if items:
+                                last4 = _get_field(items[0], "last4")
+                                if last4:
+                                    card_desc = f"debit card ending in **{last4}**"
+                        if tm.get("tool_name") == "propose_card_block":
+                            c = tm.get("content")
+                            if isinstance(c, dict):
+                                act_id = c.get("action_id", "pending")
+                    resp_text = f"⚠️ **Card Freeze Proposed**\n\nI have created a pending action to freeze your {card_desc}.\n\n**Action ID:** `{act_id}`\n\n*Please confirm below:*"
             else:
                 resp_text = "I have retrieved your account and transaction details. Your current balance and records are up to date."
 
@@ -201,20 +231,36 @@ class MockLLMClient:
                 elif "propose_card_block" not in tool_names_called:
                     card_id = None
                     for tm in tool_msgs:
-                        if tm.get("tool_name") == "get_cards" and isinstance(tm.get("content"), list) and tm["content"]:
-                            card_id = tm["content"][0].get("id")
-                            break
+                        if tm.get("tool_name") == "get_cards":
+                            items = _get_items(tm.get("content"))
+                            if items:
+                                card_id = _get_field(items[0], "id")
+                                break
                     if card_id:
-                        func_calls = [MockFunctionCallWrapper("propose_card_block", {"card_id": card_id, "reason": "Suspicious activity detected"})]
+                        func_calls = [MockFunctionCallWrapper("propose_card_block", {"card_id": str(card_id), "reason": "Customer reported card lost or stolen"})]
+                
                 if not func_calls:
                     act_id = "pending"
+                    card_desc = "debit card"
                     for tm in tool_msgs:
-                        if tm.get("tool_name") == "propose_card_block" and isinstance(tm.get("content"), dict):
-                            act_id = tm["content"].get("action_id", "pending")
-                            break
-                    resp_text = f"⚠️ **Card Freeze Proposed**\n\nI have created a pending action to freeze your debit card.\n\n**Action ID:** `{act_id}`\n\n*Please confirm below:* "
+                        if tm.get("tool_name") == "get_cards":
+                            items = _get_items(tm.get("content"))
+                            if items:
+                                last4 = _get_field(items[0], "last4")
+                                if last4:
+                                    card_desc = f"debit card ending in **{last4}**"
+                        if tm.get("tool_name") == "propose_card_block":
+                            c = tm.get("content")
+                            if isinstance(c, dict):
+                                act_id = c.get("action_id", "pending")
+                    resp_text = f"⚠️ **Card Freeze Proposed**\n\nI have created a pending action to freeze your {card_desc}.\n\n**Action ID:** `{act_id}`\n\n*Please confirm below:*"
+            elif any(k in user_text for k in ["fraud", "dispute", "unauthorized", "didn't make"]):
+                if "get_disputes" not in tool_names_called:
+                    func_calls = [MockFunctionCallWrapper("get_disputes", {})]
+                if not func_calls:
+                    resp_text = "🛡️ **Risk & Dispute Assessment**\n\nI have verified your account activity and active disputes. If you suspect an unauthorized charge, I can initiate a formal transaction dispute for your review."
             else:
-                resp_text = "Your card management request has been processed. If you requested a card block, please review the confirmation card."
+                resp_text = "Your security request has been processed. If you requested a card block, please review the confirmation card."
 
         elif "Credit Agent" in system_prompt:
             if any(k in user_text for k in ["loan", "emi", "credit", "borrow"]):

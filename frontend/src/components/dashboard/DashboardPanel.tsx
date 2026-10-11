@@ -12,6 +12,12 @@ interface LiveAlert {
   rules?: string[];
 }
 
+const PERSONA_CONFIG: Record<Persona, { balance: string; account: string }> = {
+  arjun: { balance: '₹ 12,95,000.00', account: 'Account ending in 4521' },
+  priya: { balance: '₹ 85,000.00', account: 'Account ending in 1122' },
+  rahul: { balance: '₹ 12,000.00', account: 'Account ending in 3344' },
+};
+
 export const DashboardPanel: React.FC = () => {
   const { persona, switchPersona, isLoading, token } = useAuth();
   const [alerts, setAlerts] = useState<LiveAlert[]>([]);
@@ -99,9 +105,9 @@ export const DashboardPanel: React.FC = () => {
               <Wallet size={16} />
               <p className="text-sm">Total Balance</p>
             </div>
-            <h3 className="text-3xl font-light tracking-tight">₹ 1,24,500.00</h3>
+            <h3 className="text-3xl font-light tracking-tight">{PERSONA_CONFIG[persona]?.balance ?? '₹ 85,000.00'}</h3>
             <div className="mt-4 text-xs text-slate-400">
-              Account ending in 4021
+              {PERSONA_CONFIG[persona]?.account ?? 'Account ending in 1122'}
             </div>
           </div>
         </div>
