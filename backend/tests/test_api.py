@@ -13,23 +13,10 @@ from app.main import app
 
 @pytest_asyncio.fixture(autouse=True)
 async def setup_db():
-    async with engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.drop_all)
-        await conn.run_sync(SQLModel.metadata.create_all)
-        
-    async with SessionLocal() as db:
-        cust = Customer(
-            id=uuid.uuid4(),
-            persona_id="test_persona",
-            first_name="Virat",
-            last_name="Test",
-            name="Virat Test",
-            email="virat@example.com",
-            phone="+919876543210"
-        )
-        db.add(cust)
-        await db.commit()
+    from scripts.seed import seed_data
+    await seed_data()
     yield
+    await seed_data()
 
 @pytest.mark.asyncio
 async def test_auth_login():

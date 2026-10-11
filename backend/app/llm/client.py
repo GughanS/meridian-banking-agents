@@ -79,17 +79,28 @@ class MockLLMClient:
         for msg in messages:
             content = ""
             if isinstance(msg, dict):
-                c = msg.get("content", "")
-                if isinstance(c, str) and not c.startswith("Based on the conversation"):
-                    content = c
+                if msg.get("role") == "user":
+                    c = msg.get("content", "")
+                    if isinstance(c, str):
+                        content = c
             elif isinstance(msg, (list, tuple)) and len(msg) >= 2:
-                content = str(msg[1])
+                if str(msg[0]).lower() in ["user", "human"]:
+                    content = str(msg[1])
             elif hasattr(msg, "content"):
-                c = str(msg.content)
-                if not c.startswith("Based on the conversation"):
-                    content = c
+                role = str(getattr(msg, "role", getattr(msg, "type", "user"))).lower()
+                if role in ["user", "human"]:
+                    c = str(msg.content)
+                    if not c.startswith("Based on the conversation"):
+                        content = c
             if content:
                 user_text += " " + content.lower()
+
+        if not user_text.strip() and messages:
+            # Fallback to last non-tool content if role wasn't tagged
+            for m in reversed(messages):
+                if isinstance(m, dict) and m.get("role") != "tool":
+                    user_text = str(m.get("content", "")).lower()
+                    break
 
         resp_text = "Mock response"
         func_calls: list[Any] = []
@@ -196,7 +207,7 @@ class MockLLMClient:
                             if items:
                                 acc = items[0]
                                 bal = float(_get_field(acc, "balance", 0))
-                                num = str(_get_field(acc, "account_number", "4021"))
+                                num = str(_get_field(acc, "account_number", _get_field(acc, "id", "4521")))
                                 acc_info = f"Your current balance is **₹{bal:,.2f}** (Account ending in **{num[-4:]}**).\n\n"
                                 break
 
@@ -228,7 +239,7 @@ class MockLLMClient:
                             if items:
                                 acc = items[0]
                                 bal = float(_get_field(acc, "balance", 0))
-                                num = str(_get_field(acc, "account_number", "4521"))
+                                num = str(_get_field(acc, "account_number", _get_field(acc, "id", "4521")))
                                 bal_str = f"₹{bal:,.2f}"
                                 last4 = str(num)[-4:]
                                 break
@@ -254,7 +265,8 @@ class MockLLMClient:
                                 break
                     if acc_id:
                         func_calls = [MockFunctionCallWrapper("get_transactions", {"account_id": str(acc_id), "limit": 3})]
-                else:
+                
+                if not func_calls:
                     bal_str = "₹12,95,000.00"
                     last4 = "4521"
                     for tm in tool_msgs:
@@ -263,7 +275,7 @@ class MockLLMClient:
                             if items:
                                 acc = items[0]
                                 bal = float(_get_field(acc, "balance", 0))
-                                num = str(_get_field(acc, "account_number", "4521"))
+                                num = str(_get_field(acc, "id", "4521"))
                                 bal_str = f"₹{bal:,.2f}"
                                 last4 = str(num)[-4:]
                                 break
